@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Face Mask Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="container">
+    <h1>😷 Face Mask Detection System</h1>
+
+    <!-- BUTTONS -->
+    <div class="controls">
+        <button id="cameraBtn">Use Camera</button>
+        <button id="uploadBtn">Upload Image</button>
+        <input type="file" id="fileInput" accept="image/*" hidden>
+    </div>
+
+    <!-- VIDEO SECTION -->
+    <div class="video-container" id="videoSection" style="display:none;">
+        <video id="video" autoplay></video>
+        <canvas id="canvas"></canvas>
+
+        <!-- BACK BUTTON -->
+        <button id="backBtn" class="back-btn">⬅ Back</button>
+    </div>
+
+    <!-- IMAGE PREVIEW -->
+    <div class="image-container" id="imageSection" style="display:none;">
+        <img id="previewImage" />
+
+        <!-- BACK BUTTON FOR IMAGE -->
+        <button id="backImageBtn" class="back-btn">⬅ Back</button>
+    </div>
+
+    <!-- RESULT -->
+    <div class="status">
+        <p id="result">Status: Waiting...</p>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
