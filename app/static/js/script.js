@@ -20,31 +20,62 @@ let intervalId = null;  // ✅ FIX
 // ================= CAMERA =================
 
 cameraBtn.addEventListener("click", () => {
+
+    // Check browser support
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Camera not supported. Use Chrome + localhost.");
+        return;
+    }
+
+    // Show video section
     imageSection.style.display = "none";
     videoSection.style.display = "block";
 
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then(s => {
-            stream = s;
-            video.srcObject = stream;
-            video.play();
+    navigator.mediaDevices.getUserMedia({
+        video: true
+    })
+    .then(s => {
 
-            // ✅ Prevent multiple intervals
-            if (intervalId) clearInterval(intervalId);
+        stream = s;
 
-            intervalId = setInterval(sendFrame, 1500);
-        })
-        .catch(err => console.error(err));
+        video.srcObject = stream;
+
+        video.play();
+
+        // Prevent multiple intervals
+        if (intervalId) {
+            clearInterval(intervalId);
+        }
+
+        // Send frame every 1 second
+        intervalId = setInterval(sendFrame, 1000);
+    })
+    .catch(err => {
+        console.error("Camera Error:", err);
+        alert("Unable to access camera");
+    });
 });
 
+// ================= SEND VIDEO FRAME =================
+
 function sendFrame() {
+
+    // Wait until video fully loads
+    if (!video.videoWidth || !video.videoHeight) {
+        return;
+    }
+
+    // Match canvas size to video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
-    ctx.drawImage(video, 0, 0);
+    // Draw current frame
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+    // Convert frame to image
     const dataURL = canvas.toDataURL("image/jpeg");
 
+    // Send to backend
     sendToServer(dataURL);
 }
 
@@ -55,6 +86,7 @@ uploadBtn.addEventListener("click", () => {
 });
 
 fileInput.addEventListener("change", () => {
+
     const file = fileInput.files[0];
 
     if (!file) return;
@@ -62,11 +94,17 @@ fileInput.addEventListener("change", () => {
     const reader = new FileReader();
 
     reader.onload = function(e) {
-        imageSection.style.display = "block";
+
+        // Hide camera section
         videoSection.style.display = "none";
 
+        // Show image section
+        imageSection.style.display = "block";
+
+        // Show image preview
         previewImage.src = e.target.result;
 
+        // Send image to backend
         sendToServer(e.target.result);
     };
 
@@ -75,83 +113,127 @@ fileInput.addEventListener("change", () => {
 
 // ================= API CALL =================
 
-// ================= API CALL =================
-
 function sendToServer(imageData) {
+
     fetch("/predict", {
         method: "POST",
-        body: JSON.stringify({ image: imageData }),
+
         headers: {
             "Content-Type": "application/json"
-        }
+        },
+
+        body: JSON.stringify({
+            image: imageData
+        })
     })
-    .then(res => res.json())
+
+    .then(response => response.json())
+
     .then(data => {
 
-        // Set canvas size
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        // Clear old drawings
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Draw frame
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // Redraw video frame
+        if (video.videoWidth && video.videoHeight) {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        }
 
+        // No face detected
         if (!data.faces || data.faces.length === 0) {
+
             resultText.innerText = "Status: No Face Detected";
+
             return;
         }
 
         let statusText = "Status:\n";
 
+        // Draw all faces
         data.faces.forEach(face => {
+
             let [x1, y1, x2, y2] = face.box;
 
-            const color = face.label.includes("Mask") ? "lime" : "red";
+            // Color
+            const color = face.label.includes("Mask")
+                ? "lime"
+                : "red";
 
-            // Draw rectangle
+            // Rectangle
             ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
-            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+            ctx.lineWidth = 3;
 
-            // Draw label
-            const text = `${face.label} (${face.confidence}%)`;
+            ctx.strokeRect(
+                x1,
+                y1,
+                x2 - x1,
+                y2 - y1
+            );
+
+            // Text
+            const text =
+                `${face.label} (${face.confidence}%)`;
 
             ctx.fillStyle = color;
-            ctx.font = "16px Arial";
-            ctx.fillText(text, x1, y1 - 10);
+            ctx.font = "18px Arial";
+
+            ctx.fillText(
+                text,
+                x1,
+                y1 - 10
+            );
 
             statusText += text + "\n";
         });
 
+        // Show result
         resultText.innerText = statusText;
     })
-    .catch(err => console.error(err));
+
+    .catch(err => {
+        console.error("Prediction Error:", err);
+    });
 }
+
 // ================= BACK BUTTON =================
 
 backBtn.addEventListener("click", () => {
 
     // Stop camera
     if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+
+        stream.getTracks().forEach(track => {
+            track.stop();
+        });
+
         stream = null;
     }
 
-    // ✅ Stop interval
+    // Stop interval
     if (intervalId) {
+
         clearInterval(intervalId);
+
         intervalId = null;
     }
 
     // Hide sections
     videoSection.style.display = "none";
+
     imageSection.style.display = "none";
 
-    // Reset UI
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Reset text
     resultText.innerText = "Status: Waiting...";
 });
+
 // ================= IMAGE BACK BUTTON =================
 
 backImageBtn.addEventListener("click", () => {
+
     imageSection.style.display = "none";
+
     resultText.innerText = "Status: Waiting...";
 });

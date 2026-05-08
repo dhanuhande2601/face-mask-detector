@@ -4,3 +4,5 @@ numpy
 imutils
 matplotlib
 scikit-learn
+flask
+gunicorn
