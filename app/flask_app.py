@@ -13,7 +13,7 @@ app = Flask(__name__)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-face_model_path = os.path.join(BASE_DIR, "face_detector", "res10_300x300_ssd_iter_140000.caffemodel")
+face_model_path = os.path.join(BASE_DIR, "face_detector", "model.caffemodel")
 prototxt_path = os.path.join(BASE_DIR, "face_detector", "deploy.prototxt")
 mask_model_path = os.path.join(BASE_DIR, "models", "mobilenet_model")
 
